@@ -1,0 +1,366 @@
+% Name: Abteen Arab
+% Date: November 16th, 2023
+% Course: BMEG 230 Project
+%% Reset
+clear;
+clc;
+%% Open Data
+fileName = "Project_Out.csv";
+open(fileName);
+%% Vectors Right
+R_UpperArm(1,:) = RElbow_x - RShoulder_x;
+R_UpperArm(2,:) = -(RElbow_y - RShoulder_y);
+R_LowerArm(1,:) = RWrist_y - RElbow_y;
+R_LowerArm(2,:) = RWrist_y - RElbow_y;
+R_Torso(1,:) = RHip_x - RShoulder_x;
+R_Torso(2,:) = -(RHip_y - RShoulder_y);
+R_Tigh(1,:) = RHip_x - RKnee_x;
+R_Tigh(2,:) = -(RHip_y - RKnee_y);
+R_Shank(1,:) = RAnkle_x - RHip_x;
+R_Shank(2,:) = -(RAnkle_y - RHip_y);
+R_Foot(1,:) = RSmallToe_x - RAnkle_x;
+R_Foot(2,:) = -(RSmallToe_y - RAnkle_y);
+%% Data Processing
+R_UpperArm(1,:) = movmean(R_UpperArm(1,:), 5);
+R_UpperArm(2,:) = movmean(R_UpperArm(2,:), 5);
+R_LowerArm(1,:) = movmean(R_LowerArm(1,:), 5);
+R_LowerArm(2,:) = movmean(R_LowerArm(2,:), 5);
+R_Torso(1,:) = movmean(R_Torso(1,:), 5);
+R_Torso(2,:) = movmean(R_Torso(2,:), 5);
+R_Shank(1,:) = movmean(R_Shank(1,:), 5);
+R_Shank(2,:) = movmean(R_Shank(2,:), 5);
+R_Foot(1,:) = movmean(R_Foot(1,:), 5);
+R_Foot(2,:) = movmean(R_Foot(2,:), 5);
+%% Angles Right
+Dot_Product = R_UpperArm(1,:) .* R_LowerArm(1,:) + R_UpperArm(2,:) .* R_LowerArm(2,:);
+vectorNorm = sqrt(R_UpperArm(1, :).^2 + R_UpperArm(2, :).^2) .* sqrt(R_LowerArm(1, :).^2 + R_LowerArm(2, :).^2);
+angle_Elbow = acos(Dot_Product./vectorNorm);
+Dot_Product = R_UpperArm(1,:) .* R_Torso(1,:) + R_UpperArm(2,:) .* R_Torso(2,:);
+vectorNorm = sqrt(R_UpperArm(1, :).^2 + R_UpperArm(2, :).^2) .* sqrt(R_Torso(1, :).^2 + R_Torso(2, :).^2);
+angle_Shoulder = acos(Dot_Product./vectorNorm);
+Dot_Product = R_Tigh(1,:) .* R_Torso(1,:) + R_Tigh(2,:) .* R_Torso(2,:);
+vectorNorm = sqrt(R_Tigh(1, :).^2 + R_Tigh(2, :).^2) .* sqrt(R_Torso(1, :).^2 + R_Torso(2, :).^2);
+angle_Hip = acos(Dot_Product./vectorNorm);
+Dot_Product = R_Tigh(1,:) .* R_Shank(1,:) + R_Tigh(2,:) .* R_Shank(2,:);
+vectorNorm = sqrt(R_Tigh(1, :).^2 + R_Tigh(2, :).^2) .* sqrt(R_Shank(1, :).^2 + R_Shank(2, :).^2);
+angle_Knee = acos(Dot_Product./vectorNorm);
+Dot_Product = R_Foot(1,:) .* R_Shank(1,:) + R_Foot(2,:) .* R_Shank(2,:);
+vectorNorm = sqrt(R_Foot(1, :).^2 + R_Foot(2, :).^2) .* sqrt(R_Shank(1, :).^2 + R_Shank(2, :).^2);
+angle_Ankle = acos(Dot_Product./vectorNorm);
+%% Data Processing
+cVal = 20;
+RElbow_x = movmean(RElbow_x, cVal);
+RElbow_y = movmean(RElbow_y, cVal);
+RShoulder_x = movmean(RShoulder_x, cVal);
+RShoulder_y = movmean(RShoulder_y, cVal);
+RWrist_x = movmean(RWrist_x, cVal);
+RWrist_y = movmean(RWrist_y, cVal);
+RHip_x = movmean(RWrist_x, cVal);
+RHip_y = movmean(RWrist_y, cVal);
+RKnee_x = movmean(RKnee_x, cVal);
+RKnee_y = movmean(RKnee_y, cVal);
+RAnkle_x = movmean(RKnee_x, cVal);
+RAnkle_y = movmean(RKnee_y, cVal);
+RSmallToe_x = movmean(RSmallToe_x, cVal);
+RSmallToe_y = movmean(RSmallToe_y, cVal);
+%% Data Processing
+sampleRate = 60;
+cutoff_frequency = 10;
+Wn = cutoff_frequency * 2 / sampleRate;
+[b, a] = butter(4, cutoff_frequency/(sampleRate/2), 'low');
+angle_F_Elbow = filter(b, a, angle_Elbow);
+angle_F_Shoulder = filter(b, a, angle_Shoulder);
+angle_F_Hip = filter(b, a, angle_Hip);
+angle_F_Knee = filter(b, a, angle_Knee);
+angle_F_Ankle = filter(b, a, angle_Ankle);
+%% Angular Variables Right
+n = length(angle_Elbow);
+delta_t = 41/n;
+time = linspace(0, (n-1)*delta_t, n);
+angleV_Elbow = diff(angle_Elbow) ./ diff(time);
+angleV_Shoulder = diff(angle_Shoulder) ./ diff(time);
+angleV_Ankle = diff(angle_Ankle) ./diff(time);
+angleV_Hip = diff(angle_Hip) ./diff(time);
+angleV_Knee = diff(angle_Knee) ./diff(time);
+n = length(angleV_Elbow);
+delta_t = 41/n;
+time = linspace(0, (n-1)*delta_t, n);
+angleA_Elbow = diff(angleV_Elbow) ./diff(time);
+angleA_Shoulder = diff(angleV_Shoulder) ./diff(time);
+angleA_Ankle = diff(angleV_Ankle) ./diff(time);
+angleA_Hip = diff(angleV_Hip) ./diff(time);
+angleA_Knee = diff(angleV_Knee) ./diff(time);
+%% Joint Velocity And Acceleration
+n = length(RElbow_x);
+delta_t = 41/n;
+time = linspace(0, (n-1)*delta_t, n);
+V_Elbow(1,:) = diff(RElbow_x) ./ diff(time') ./100;
+V_Elbow(2,:) = diff(RElbow_y) ./ diff(time') ./100;
+V_Shoulder(1,:) = diff(RShoulder_x) ./ diff(time')./100;
+V_Shoulder(2,:) = diff(RShoulder_y) ./ diff(time')./100;
+V_Wrist(1,:) = diff(RWrist_x) ./ diff(time')./100;
+V_Wrist(2,:) = diff(RWrist_y) ./ diff(time')./100;
+V_Hip(1,:) = diff(RHip_x) ./ diff(time')./100;
+V_Hip(2,:) = diff(RHip_y) ./ diff(time')./100;
+V_Knee(1,:) = diff(RKnee_x) ./ diff(time')./100;
+V_Knee(2,:) = diff(RKnee_y) ./ diff(time')./100;
+V_Ankle(1,:) = diff(RAnkle_x) ./ diff(time')./100;
+V_Ankle(2,:) = diff(RAnkle_y) ./ diff(time')./100;
+V_Toe(1,:) = diff(RSmallToe_x) ./ diff(time')./100;
+V_Toe(2,:) = diff(RSmallToe_y) ./ diff(time')./100;
+n = length(V_Elbow(1,:));
+delta_t = 41/n;
+time = linspace(0, (n-1)*delta_t, n);
+A_Elbow(1,:) = diff(V_Elbow(1,:)) ./ diff(time);
+A_Elbow(2,:) = diff(V_Elbow(2,:)) ./ diff(time);
+A_Shoulder(1,:) = diff(V_Shoulder(1,:)) ./ diff(time);
+A_Shoulder(2,:) = diff(V_Shoulder(2,:)) ./ diff(time);
+A_Wrist(1,:) = diff(V_Wrist(1,:)) ./ diff(time);
+A_Wrist(2,:) = diff(V_Wrist(2,:)) ./ diff(time);
+A_Hip(1,:) = diff(V_Hip(1,:)) ./ diff(time);
+A_Hip(2,:) = diff(V_Hip(2,:)) ./ diff(time);
+A_Knee(1,:) = diff(V_Knee(1,:)) ./ diff(time);
+A_Knee(2,:) = diff(V_Knee(2,:)) ./ diff(time);
+A_Ankle(1,:) = diff(V_Ankle(1,:)) ./ diff(time);
+A_Ankle(2,:) = diff(V_Ankle(2,:)) ./ diff(time);
+A_Toe(1,:) = diff(V_Toe(1,:)) ./ diff(time);
+A_Toe(2,:) = diff(V_Toe(2,:)) ./ diff(time);
+%% Forces At Joints
+g = 9.81;
+m_total = 70;
+W = (m_total+50)*g;
+N = W;
+h = 1.7;
+m_Ankle = 1.43/100 * m_total;
+m_Knee = 4.75/100 * m_total;
+m_Hip = 10.5/100 * m_total;
+unitV = ones(1, size(A_Ankle, 2));
+%Ankle
+F_Ankle(2,:) = N*unitV - m_Ankle * g * unitV + m_Ankle * A_Ankle(2,:);
+F_Ankle(1,:) = m_Ankle .* A_Knee(1,:);
+%Knee
+F_Knee(2,:) = F_Ankle(2,:) - m_Knee * g * unitV + m_Knee * A_Knee(2,:);
+F_Knee(1,:) = m_Knee .* A_Knee(1,:) - F_Ankle(1,:);
+%Hip
+F_Hip(2,:) = F_Knee(2,:) - m_Hip * g*unitV + m_Hip * A_Hip(2,:);
+F_Hip(1,:) = m_Hip * A_Hip(2,:) - F_Knee(1,:);
+%% Moments At Joint
+l_Ankle = mean(sqrt((R_Foot(1, :)- R_Shank(1, :)).^2 + (R_Foot(2, :)- R_Shank(2, :)).^2))/100;
+l_Knee = mean(sqrt((R_Tigh(1, :)- R_Shank(1, :)).^2 + (R_Tigh(2, :)- R_Shank(2, :)).^2))/100;
+l_Hip = mean(sqrt((R_Torso(1, :)- R_Tigh(1, :)).^2 + (R_Torso(2, :)- R_Tigh(2, :)).^2))/100;
+I_Ankle = m_Ankle * l_Ankle^2;
+I_Knee = m_Knee * l_Knee^2;
+I_Hip = m_Hip * l_Hip^2;
+b_Ankle = 0.5;
+b_Knee = 0.433;
+b_Hip = 0.433;
+numEntry = length(unitV);
+%Ankle
+M_Ankle = I_Ankle * angleA_Ankle - W * l_Ankle * cos(angle_Ankle(1,1:numEntry)) + m_Ankle * g * l_Ankle * b_Ankle * unitV;
+M_Ankle = movmean(M_Ankle,10);
+%Knee
+M_Knee = I_Knee * angleA_Knee - l_Knee * F_Ankle(1,:) .* cos(angle_Knee(1,1:numEntry)) - F_Ankle(2,:) * l_Knee .* sin(angle_Knee(1,1:numEntry)) + m_Knee * g * l_Knee * b_Knee * unitV;
+M_Knee = movmean(M_Knee,10);
+%Hip
+M_Hip = I_Hip * angleA_Hip - F_Knee(1,:) * l_Hip .* cos(angle_Hip(1,1:numEntry)) - F_Knee(2,:) * l_Hip .* sin(angle_Hip(1,1:numEntry)) + m_Hip * g * l_Hip * b_Hip * unitV;
+M_Hip = movmean(M_Hip,10);
+%% Plots Angle with Moving Average Filter
+CF = 180/3.1415;
+n = 2505;
+delta_t = 41/n;
+windowSize = 30;
+idx1 = 1:549;
+idx2 = 549:1098;
+idx3 = 1098:1770;
+idx4 = 1770:2503;
+time1 = linspace(0, length(idx1)*delta_t, length(idx1));
+time2 = linspace(0, length(idx2)*delta_t, length(idx2));
+time3 = linspace(0, length(idx3)*delta_t, length(idx3));
+time4 = linspace(0, length(idx4)*delta_t, length(idx4));
+% Ankle
+subplot(1,3,1)
+plot(time1, movmean(angle_Ankle(idx1)*CF, windowSize));
+hold on
+plot(time2, movmean(angle_Ankle(idx2)*CF, windowSize));
+plot(time3, movmean(angle_Ankle(idx3)*CF, windowSize));
+plot(time4, movmean(angle_Ankle(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Ankle Angle (deg)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Ankle Angle vs. Time");
+hold off
+% Knee
+subplot(1,3,2)
+plot(time1, movmean(angle_Knee(idx1)*CF, windowSize));
+hold on
+plot(time2, movmean(angle_Knee(idx2)*CF, windowSize));
+plot(time3, movmean(angle_Knee(idx3)*CF, windowSize));
+plot(time4, movmean(angle_Knee(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Knee Angle (deg)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Knee Angle vs. Time");
+hold off
+% Hip
+subplot(1,3,3)
+plot(time1, movmean(angle_Hip(idx1)*CF, windowSize));
+hold on
+plot(time2, movmean(angle_Hip(idx2)*CF, windowSize));
+plot(time3, movmean(angle_Hip(idx3)*CF, windowSize));
+plot(time4, movmean(angle_Hip(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Hip Angle (deg)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Hip Angle vs. Time");
+hold off
+%% Plots Angular Velocity with Moving Average Filter
+% Ankle Angular Velocity
+subplot(1,3,1)
+plot(time1, movmean(angleV_Ankle(idx1)*CF, windowSize));
+hold on
+plot(time1, movmean(angleV_Ankle(idx1)*CF-20, 60));
+plot(time2, movmean(angleV_Ankle(idx2)*CF, windowSize));
+plot(time3, movmean(angleV_Ankle(idx3)*CF, windowSize));
+plot(time4, movmean(angleV_Ankle(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Angular Velocity (deg/s)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Ankle Angular Velocity vs. Time");
+hold off
+% Knee Angular Velocity
+subplot(1,3,2)
+plot(time1, movmean(angleV_Knee(idx1)*CF, windowSize));
+hold on
+plot(time2, movmean(angleV_Knee(idx2)*CF, windowSize));
+plot(time3, movmean(angleV_Knee(idx3)*CF, windowSize));
+plot(time4, movmean(angleV_Knee(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Angular Velocity (deg/s)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Knee Angular Velocity vs. Time");
+hold off
+% Hip Angular Velocity
+subplot(1,3,3)
+plot(time1, movmean(angleV_Hip(idx1)*CF, windowSize));
+hold on
+plot(time2, movmean(angleV_Hip(idx2)*CF, windowSize));
+plot(time3, movmean(angleV_Hip(idx3)*CF, windowSize));
+plot(time4, movmean(angleV_Hip(idx4)*CF, windowSize));
+xlabel("Time (s)");
+ylabel("Angular Velocity (deg/s)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Hip Angular Velocity vs. Time");
+%% Plots Angular Acceleration
+CF = 180/3.1415;
+n = 2505;
+delta_t = 41/n;
+% Define the indices for each segment
+idx1 = 1:549;
+idx2 = 549:1098;
+idx3 = 1098:1770;
+idx4 = 1770:2503;
+% Create individual time vectors for each segment
+time1 = linspace(0, length(idx1)*delta_t, length(idx1));
+time2 = linspace(0, length(idx2)*delta_t, length(idx2));
+time3 = linspace(0, length(idx3)*delta_t, length(idx3));
+time4 = linspace(0, length(idx4)*delta_t, length(idx4));
+% Ankle Angular Acceleration
+subplot(1,3,1)
+plot(time1, movmean(angleA_Ankle(idx1)*CF,windowSize));
+hold on
+plot(time2, movmean(angleA_Ankle(idx2)*CF,windowSize));
+plot(time3, movmean(angleA_Ankle(idx3)*CF,windowSize));
+plot(time4, movmean(angleA_Ankle(idx4)*CF,windowSize));
+xlabel("Time (s)");
+ylabel("Angular Acceleration (deg/s^2)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Ankle Angular Acceleration vs. Time");
+hold off
+% Knee Angular Acceleration
+subplot(1,3,2)
+plot(time1, movmean(angleA_Knee(idx1)*CF,windowSize));
+hold on
+plot(time2, movmean(angleA_Knee(idx2)*CF,windowSize));
+plot(time3, movmean(angleA_Knee(idx3)*CF,windowSize));
+plot(time4, movmean(angleA_Knee(idx4)*CF,windowSize));
+xlabel("Time (s)");
+ylabel("Angular Acceleration (deg/s^2)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Knee Angular Acceleration vs. Time");
+hold off
+% Hip Angular Acceleration
+subplot(1,3,3)
+plot(time1, movmean(angleA_Hip(idx1)*CF,windowSize));
+hold on
+plot(time2, movmean(angleA_Hip(idx2)*CF,windowSize));
+plot(time3, movmean(angleA_Hip(idx3)*CF,windowSize));
+plot(time4, movmean(angleA_Hip(idx4)*CF,windowSize));
+xlabel("Time (s)");
+ylabel("Angular Acceleration (deg/s^2)");
+legend('Harrison', 'No Weights (Average)','Niel', 'Inderdeep', 'Abteen');
+title("Hip Angular Acceleration vs. Time");
+hold off
+%% Moment Plots
+D = movmean(abs(M_Knee),25);
+%% Stick Figure
+figure;
+% Create a VideoWriter object
+videoFile = VideoWriter('stick_figure_movement.mp4', 'MPEG-4');
+open(videoFile);
+% Head
+for i = 1:544
+a = Neck_x(i);
+b = -Neck_y(i);
+headCenter = [a, b]/100;
+headRadius = 0.4;
+drawCircle(headCenter, headRadius);
+% Body
+bodyStart = [Neck_x(i)/100, -Neck_y(i)/100-headRadius];
+bodyEnd = [MidHip_x(i), -MidHip_y(i)]/100;
+drawLine(bodyStart, bodyEnd);
+% Right Arm
+rightArmStart =[Neck_x(i)/100, -Neck_y(i)/100-headRadius];
+rightArmEnd = [RWrist_x(i), -RWrist_y(i)]/100;
+drawLine(rightArmStart, rightArmEnd);
+% Left Thigh
+leftLegStart = [MidHip_x(i), -MidHip_y(i)]/100;
+leftLegEnd = [RKnee_x(i), -RKnee_y(i)]/100;
+drawLine(leftLegStart, leftLegEnd);
+% Right Thigh
+rightLegStart = [MidHip_x(i), -MidHip_y(i)]/100;
+rightLegEnd = [RKnee_x(i), -RKnee_y(i)]/100;
+drawLine(rightLegStart, rightLegEnd);
+% Left Shank
+leftShankStart = [RKnee_x(i), -RKnee_y(i)]/100;
+leftShankEnd = [RAnkle_x(i), -RAnkle_y(i)]/100;
+drawLine(leftShankStart, leftShankEnd);
+% Right Shank
+rightShankStart = [RKnee_x(i), -RKnee_y(i)]/100;
+rightShankEnd = [RAnkle_x(i), -RAnkle_y(i)]/100;
+drawLine(rightShankStart, rightShankEnd);
+% Set axis limits
+axis equal;
+axis([0, 10, -10, 0]);
+% Add labels and title
+title('Stick Figure');
+xlabel('X-axis');
+ylabel('Y-axis');
+% Capture the current frame
+frame = getframe(gcf);
+% Write the frame to the video file
+writeVideo(videoFile, frame);
+% Pause for a short duration to control the frame rate
+pause(0.0001)
+end
+% Close the video file
+close(videoFile);
+%% Functions
+function drawLine(startPoint, endPoint)
+line([startPoint(1), endPoint(1)], [startPoint(2), endPoint(2)], 'Color', 'k', 'LineWidth', 2);
+end
+function drawCircle(center, radius)
+theta = linspace(0, 2*pi, 100);
+x = center(1) + radius * cos(theta);
+y = center(2) + radius * sin(theta);
+plot(x, y, 'k', 'LineWidth', 2);
+end
